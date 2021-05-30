@@ -1,0 +1,38 @@
+version: '2'
+services: 
+  reverse-proxy:
+    image: jwilder/nginx-proxy
+    container_name: nginx-proxy
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    labels:
+      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
+    volumes:
+      - "${DATA_DIR}/nginx/certs:/etc/nginx/certs:ro"
+      - "${DATA_DIR}/nginx/vhosts:/etc/nginx/vhost.d"
+      - "${DATA_DIR}/nginx/html:/usr/share/nginx/html"
+      - ./nginx.conf:/etc/nginx/proxy.conf
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - reverse-proxy
+
+  letsencrypt-companion:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: letsencrypt
+    restart: always
+    volumes:
+      - "${DATA_DIR}/nginx/certs:/etc/nginx/certs"
+      - "${DATA_DIR}/nginx/vhosts:/etc/nginx/vhost.d"
+      - "${DATA_DIR}/nginx/html:/usr/share/nginx/html"
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - reverse-proxy
+    depends_on:
+      - reverse-proxy
+
+networks:
+  reverse-proxy:
+    external:
+      name: reverse-proxy
